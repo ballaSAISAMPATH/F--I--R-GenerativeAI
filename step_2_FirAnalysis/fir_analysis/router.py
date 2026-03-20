@@ -28,6 +28,8 @@ from fir_analysis.pdf_extractor import extract_text_from_pdf, validate_pdf
 
 router = APIRouter()
 
+
+
 @router.get(
     "/ping-ollama",
     summary="Test Ollama Connection",
@@ -50,6 +52,8 @@ async def ping_ollama():
     except httpx.HTTPError as exc:
         raise OllamaUnavailableError(f"{type(exc).__name__}: {exc}")
 
+
+
 @router.post(
     "/mask-preview",
     response_model=MaskPreviewResponse,
@@ -69,6 +73,7 @@ async def mask_preview(
     return await service.mask_preview(req.fir_text)
 
 
+
 @router.post(
     "/analyse",
     response_model=FIRAnalysisResponse,
@@ -84,6 +89,7 @@ async def analyse_fir(
 ) -> FIRAnalysisResponse:
     _check_size(req.fir_text)
     return await service.analyse(req.fir_text)
+
 
 
 @router.post(
@@ -130,6 +136,8 @@ async def analyse_fir_pdf(
 
     return response
 
+
+
 @router.post(
     "/extract-only",
     response_model=FIRExtractedFields,
@@ -153,6 +161,8 @@ async def extract_only(
 )
 async def ipc_sections() -> dict[str, str]:
     return IPC_DESCRIPTIONS
+
+
 
 def _check_size(text: str) -> None:
     size = len(text.encode("utf-8"))
