@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { id: "hero", label: "Home" },
+  { id: "hero",         label: "Home" },
   { id: "how-it-works", label: "How It Works" },
-  { id: "chat", label: "File FIR" },
-  { id: "report", label: "Report" },
-  { id: "footer", label: "About" },
+  { id: "footer",       label: "About" },
 ];
 
 export default function Navbar() {
-  const [active, setActive] = useState("hero");
-  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive]       = useState("hero");
+  const [scrolled, setScrolled]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -23,7 +21,6 @@ export default function Navbar() {
       for (const section of sections) {
         if (section.getBoundingClientRect().top <= 200) current = section.id;
       }
-      // If scrolled to the very bottom, force "About" active
       if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 50) {
         current = "footer";
       }
@@ -43,9 +40,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         <button className="nav-logo" onClick={() => scrollTo("hero")}>
           <div className="nav-logo-icon">F</div>
-          <span className="nav-logo-text">
-            FIR<span className="nav-logo-version"></span>
-          </span>
+          <span className="nav-logo-text">FIR</span>
         </button>
 
         <div className="nav-links">
@@ -74,15 +69,14 @@ export default function Navbar() {
         </button>
 
         <div className="nav-actions-desktop">
-          <button className="nav-signin" onClick={() => navigate("/auth")}>
-            Sign In
-          </button>
-          <button className="nav-cta nav-cta-desktop" onClick={() => scrollTo("chat")}>
-            Start Filing →
-          </button>
+          {/* Sign In → /login */}
+          <Link to="/login" className="nav-signin">Sign In</Link>
+          {/* Start Filing → /step-1 */}
+          <Link to="/step-1" className="nav-cta nav-cta-desktop">Start Filing →</Link>
         </div>
       </div>
 
+      {/* Mobile dropdown */}
       <div className={`nav-mobile-dropdown ${mobileOpen ? "open" : ""}`}>
         {NAV_ITEMS.map((item) => (
           <button
@@ -93,12 +87,20 @@ export default function Navbar() {
             {item.label}
           </button>
         ))}
-        <button className="nav-signin" onClick={() => { setMobileOpen(false); navigate("/auth"); }}>
+        <Link
+          to="/login"
+          className="nav-signin"
+          onClick={() => setMobileOpen(false)}
+        >
           Sign In
-        </button>
-        <button className="nav-cta" onClick={() => scrollTo("chat")}>
+        </Link>
+        <Link
+          to="/step-1"
+          className="nav-cta"
+          onClick={() => setMobileOpen(false)}
+        >
           Start Filing →
-        </button>
+        </Link>
       </div>
     </nav>
   );

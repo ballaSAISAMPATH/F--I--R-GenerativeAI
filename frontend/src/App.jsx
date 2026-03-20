@@ -1,33 +1,29 @@
-import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import HeroSection from "./components/HeroSection";
-import HowItWorks from "./components/HowItWorks";
-import ChatSection from "./components/ChatSection";
-import ReportSection from "./components/ReportSection";
-import Footer from "./components/Footer";
-import AuthPage from "./components/AuthPage";
-
-function HomePage() {
-  const [firReport, setFirReport] = useState(null);
-
-  return (
-    <div className="app-shell">
-      <Navbar />
-      <HeroSection />
-      <HowItWorks />
-      <ChatSection onFIRReady={setFirReport} />
-      <ReportSection report={firReport} />
-      <Footer />
-    </div>
-  );
-}
+import { Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import SignUpPage from "./pages/SignUpPage";
+import Step1Page from "./pages/Step1Page";
+import Step2Page from "./pages/Step2Page";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/auth" element={<AuthPage />} />
+      {/* Landing / Home */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* Auth pages */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+
+      {/* FIR filing steps */}
+      <Route path="/step-1" element={<Step1Page />} />
+      <Route path="/step-2" element={<Step2Page />} />
+
+      {/* Legacy /auth redirect → /login */}
+      <Route path="/auth" element={<Navigate to="/login" replace />} />
+
+      {/* 404 fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

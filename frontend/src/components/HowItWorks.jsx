@@ -1,20 +1,22 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const STEPS = [
-  { num: "01", icon: "🎙️", title: "Speak Your Problem", desc: "Tap the microphone and explain what happened in your own language. No typing needed — just talk naturally." },
-  { num: "02", icon: "🤖", title: "AI Asks Follow-ups", desc: "Our assistant will ask you simple questions one by one to collect all necessary details for the FIR." },
-  { num: "03", icon: "📋", title: "Review Your FIR", desc: "Once all information is gathered, a complete FIR report is generated. Review every detail carefully." },
-  { num: "04", icon: "📥", title: "Download or Print", desc: "Save your FIR as PDF, TXT, or DOC. You can also print it directly. Your report, your way." },
+  { num: "01", icon: "🔐", title: "Sign In or Sign Up",   desc: "Create a free account or sign in. Your identity is kept private and your report is generated securely." },
+  { num: "02", icon: "🎙️", title: "Speak Your Problem",   desc: "Tap the microphone and explain what happened in your own language. No typing needed — just talk naturally." },
+  { num: "03", icon: "📋", title: "Review Your FIR",      desc: "Once all information is gathered, a complete FIR report is generated. Review every detail carefully." },
+  { num: "04", icon: "📥", title: "Download or Print",    desc: "Save your FIR as PDF, TXT, or DOC. You can also print it directly. Your report, your way." },
 ];
 
 export default function HowItWorks() {
   const sectionRef = useRef(null);
-  const gridRef = useRef(null);
-  const ctaRef = useRef(null);
+  const gridRef    = useRef(null);
+  const ctaRef     = useRef(null);
+  const navigate   = useNavigate();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -22,14 +24,12 @@ export default function HowItWorks() {
         scrollTrigger: { trigger: sectionRef.current, start: "top 85%", toggleActions: "play none none none" },
         y: 30, opacity: 0, stagger: 0.12, duration: 0.7, ease: "power2.out",
       });
-
       gsap.from(".steps-timeline-line", {
         scrollTrigger: { trigger: gridRef.current, start: "top 85%", toggleActions: "play none none none" },
         scaleX: 0, transformOrigin: "left center", duration: 1.2, ease: "power2.inOut",
       });
-
       const cards = gridRef.current?.querySelectorAll(".step-card");
-      if (cards && cards.length > 0) {
+      if (cards?.length) {
         gsap.fromTo(cards,
           { y: 50, opacity: 0 },
           {
@@ -38,9 +38,8 @@ export default function HowItWorks() {
           }
         );
       }
-
       const icons = gridRef.current?.querySelectorAll(".step-card-icon");
-      if (icons && icons.length > 0) {
+      if (icons?.length) {
         gsap.fromTo(icons,
           { scale: 0, rotation: -20 },
           {
@@ -49,7 +48,6 @@ export default function HowItWorks() {
           }
         );
       }
-
       if (ctaRef.current) {
         gsap.from(ctaRef.current, {
           scrollTrigger: { trigger: ctaRef.current, start: "top 92%", toggleActions: "play none none none" },
@@ -93,8 +91,9 @@ export default function HowItWorks() {
           <p className="how-cta-text">
             Ready to file your FIR? It takes less than <strong>2 minutes</strong>.
           </p>
-          <button className="how-cta-btn" onClick={() => document.getElementById("chat")?.scrollIntoView({ behavior: "smooth" })}>
-            Start Filing Now →
+          {/* Navigate to /login → then /step-1 */}
+          <button className="how-cta-btn" onClick={() => navigate("/login")}>
+            Get Started →
           </button>
         </div>
       </div>
