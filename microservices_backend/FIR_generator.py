@@ -7,12 +7,11 @@ from datetime import datetime
 import uuid
 import os
 import json
-import requests
+
 from encryption_template import encryption_prompt
 from FIR_generation_template import FIR_generation_prompt
-load_dotenv()
-LM_STUDIO_URL = os.getenv("LM_STUDIO_URL") + "/v1/chat/completions"
 
+load_dotenv()
 
 model = ChatGroq(
     model="llama-3.3-70b-versatile",
@@ -121,83 +120,15 @@ llm_extraction = model.with_structured_output(LLMFIRExtraction)
 
 
 def encrypt_narration(state: dict):
-    messages = encryption_prompt.format_messages(
+    msg = encryption_prompt.format_messages(
         text=state["fir_text"]
     )
-
-    openai_messages = []
-
-    for m in messages:
-        if m.type == "human":
-            role = "user"
-            content = m.content
-        elif m.type == "ai":
-            role = "assistant"
-            content = m.content
-        else:
-            role = "system"
-            content = (
-                m.content
-                + "\n\n"
-                + "STRICT OUTPUT RULES:\n"
-                + "- You MUST return ONLY valid JSON.\n"
-                + "- No explanations.\n"
-                + "- No headings.\n"
-                + "- No markdown.\n"
-                + "- No code blocks.\n"
-                + "- The response MUST be a single JSON object.\n\n"
-                + "Required JSON schema:\n"
-                + "{\n"
-                + '  "encrypted_narration": string,\n'
-                + '  "mapping": { "<placeholder>": "<original_value>" }\n'
-                + "}\n\n"
-                + "If unsure, still output JSON in this exact format."
-            )
-
-        openai_messages.append({
-            "role": role,
-            "content": content
-        })
-
-    payload = {
-        "model": "llama-3.1-8b-instruct",
-        "temperature": 0,
-        "messages": openai_messages
-    }
-
-    res = requests.post(
-        LM_STUDIO_URL,
-        json=payload,
-        timeout=90
-    )
-
-    if res.status_code != 200:
-        raise RuntimeError(f"LM Studio error {res.status_code}: {res.text}")
-
-    content = res.json()["choices"][0]["message"]["content"]
-
-    if not content or not content.strip():
-        raise RuntimeError("LM Studio returned empty response")
-
-    content = content.strip()
-
-    if content.startswith("```"):
-        content = content.strip("`")
-        content = content[content.find("{"): content.rfind("}") + 1]
-
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"LM Studio returned non-JSON output.\nRaw response:\n{content}"
-        ) from e
-
-    validated = NarrationEncrypted(**parsed)
-
+    result = encrypt_llm.invoke(msg)
     return {
-        "encrypted_narration": validated.encrypted_narration,
-        "mapping": validated.mapping
+        "encrypted_narration": result.encrypted_narration,
+        "mapping": result.mapping
     }
+
 
 def llm_extract_fields(state: dict):
     msg = FIR_generation_prompt.format_messages(
@@ -271,18 +202,69 @@ def build_final_fir(state: dict):
 
     return {"fir": fir}
 
+def validate_extraction(state: dict):
+    llm = state["llm_data"]
 
+    missing_fields = []
+
+    if not llm.complainant_name:
+        missing_fields.append("complainant_name")
+    if not llm.place_of_occurrence:
+        missing_fields.append("place_of_occurrence")
+    if not llm.date_of_occurrence:
+        missing_fields.append("date_of_occurrence")
+
+    return {
+        **state,   
+        "missing_fields": missing_fields,
+        "retry_count": state.get("retry_count", 0)
+    }
+   
+
+def decide_next_step(state: dict):
+    if state["missing_fields"] and state["retry_count"] < 2:
+        return "retry_extraction"
+    return "mapping_function"
+
+def retry_extraction(state: dict):
+    msg = FIR_generation_prompt.format_messages(
+        FIR_narration=state["encrypted_narration"]
+    )
+
+    extracted = llm_extraction.invoke(msg)
+
+    return {
+        **state,   
+        "llm_data": extracted,
+        "retry_count": state["retry_count"] + 1
+    }
 
 graph = StateGraph(dict)
 
 graph.add_node("encrypt_narration", encrypt_narration)
 graph.add_node("llm_extract_fields", llm_extract_fields)
+graph.add_node("validate_extraction", validate_extraction)
+graph.add_node("retry_extraction", retry_extraction)
 graph.add_node("mapping_function", mapping_function)
 graph.add_node("build_final_fir", build_final_fir)
 
 graph.add_edge(START, "encrypt_narration")
 graph.add_edge("encrypt_narration", "llm_extract_fields")
-graph.add_edge("llm_extract_fields", "mapping_function")
+
+# NEW FLOW
+graph.add_edge("llm_extract_fields", "validate_extraction")
+
+graph.add_conditional_edges(
+    "validate_extraction",
+    decide_next_step,
+    {
+        "retry_extraction": "retry_extraction",
+        "mapping_function": "mapping_function"
+    }
+)
+
+graph.add_edge("retry_extraction", "validate_extraction")
+
 graph.add_edge("mapping_function", "build_final_fir")
 graph.add_edge("build_final_fir", END)
 
