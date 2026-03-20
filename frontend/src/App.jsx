@@ -1,14 +1,14 @@
 import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import HowItWorks from "./components/HowItWorks";
 import ChatSection from "./components/ChatSection";
 import ReportSection from "./components/ReportSection";
 import Footer from "./components/Footer";
-import VoiceDemo from "./components/VoiceDemo";
-import FIRAnalysisPage from "./pages/FIRAnalysisPage";
-import { Routes, Route } from "react-router-dom";
-function Home() {
+import AuthPage from "./components/AuthPage";
+
+function HomePage() {
   const [firReport, setFirReport] = useState(null);
 
   return (
@@ -19,7 +19,6 @@ function Home() {
       <ChatSection onFIRReady={setFirReport} />
       <ReportSection report={firReport} />
       <Footer />
-      <VoiceDemo />
     </div>
   );
 }
@@ -27,8 +26,8 @@ function Home() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/fir-analysis" element={<FIRAnalysisPage />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/auth" element={<AuthPage />} />
     </Routes>
   );
 }

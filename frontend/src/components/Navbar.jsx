@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const NAV_ITEMS = [
   { id: "hero", label: "Home" },
@@ -13,10 +13,7 @@ export default function Navbar() {
   const [active, setActive] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const navigate = useNavigate();
-  const location = useLocation();
-  const isAnalysisPage = location.pathname === "/fir-analysis";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +23,7 @@ export default function Navbar() {
       for (const section of sections) {
         if (section.getBoundingClientRect().top <= 200) current = section.id;
       }
+      // If scrolled to the very bottom, force "About" active
       if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 50) {
         current = "footer";
       }
@@ -36,13 +34,7 @@ export default function Navbar() {
   }, []);
 
   const scrollTo = (id) => {
-    if (isAnalysisPage) {
-      // Navigate home first, then scroll
-      navigate("/");
-      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 100);
-    } else {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMobileOpen(false);
   };
 
@@ -66,13 +58,6 @@ export default function Navbar() {
               {item.label}
             </button>
           ))}
-          {/* ── FIR Analysis page link ── */}
-          <button
-            className={`nav-link ${isAnalysisPage ? "active" : ""}`}
-            onClick={() => navigate("/fir-analysis")}
-          >
-            FIR Analysis
-          </button>
         </div>
 
         <button
@@ -88,9 +73,14 @@ export default function Navbar() {
           </svg>
         </button>
 
-        <button className="nav-cta nav-cta-desktop" onClick={() => scrollTo("chat")}>
-          Start Filing →
-        </button>
+        <div className="nav-actions-desktop">
+          <button className="nav-signin" onClick={() => navigate("/auth")}>
+            Sign In
+          </button>
+          <button className="nav-cta nav-cta-desktop" onClick={() => scrollTo("chat")}>
+            Start Filing →
+          </button>
+        </div>
       </div>
 
       <div className={`nav-mobile-dropdown ${mobileOpen ? "open" : ""}`}>
@@ -103,12 +93,8 @@ export default function Navbar() {
             {item.label}
           </button>
         ))}
-        {/* ── FIR Analysis in mobile menu ── */}
-        <button
-          className={`nav-link ${isAnalysisPage ? "active" : ""}`}
-          onClick={() => { navigate("/fir-analysis"); setMobileOpen(false); }}
-        >
-          FIR Analysis
+        <button className="nav-signin" onClick={() => { setMobileOpen(false); navigate("/auth"); }}>
+          Sign In
         </button>
         <button className="nav-cta" onClick={() => scrollTo("chat")}>
           Start Filing →
