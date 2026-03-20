@@ -5,13 +5,11 @@ from contextlib import asynccontextmanager
 from core.config import settings
 from fir_analysis.router import router as fir_router
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print(f"🚀 FIR Analyser starting — Ollama: {settings.OLLAMA_BASE_URL}")
+    print(f" FIR Analyser starting — Ollama: {settings.OLLAMA_BASE_URL}")
     yield
-    print("🛑 FIR Analyser shutting down")
-
+    print(" FIR Analyser shutting down")
 
 app = FastAPI(
     title="FIR Analyser API",

@@ -202,18 +202,69 @@ def build_final_fir(state: dict):
 
     return {"fir": fir}
 
+def validate_extraction(state: dict):
+    llm = state["llm_data"]
 
+    missing_fields = []
+
+    if not llm.complainant_name:
+        missing_fields.append("complainant_name")
+    if not llm.place_of_occurrence:
+        missing_fields.append("place_of_occurrence")
+    if not llm.date_of_occurrence:
+        missing_fields.append("date_of_occurrence")
+
+    return {
+        **state,   
+        "missing_fields": missing_fields,
+        "retry_count": state.get("retry_count", 0)
+    }
+   
+
+def decide_next_step(state: dict):
+    if state["missing_fields"] and state["retry_count"] < 2:
+        return "retry_extraction"
+    return "mapping_function"
+
+def retry_extraction(state: dict):
+    msg = FIR_generation_prompt.format_messages(
+        FIR_narration=state["encrypted_narration"]
+    )
+
+    extracted = llm_extraction.invoke(msg)
+
+    return {
+        **state,   
+        "llm_data": extracted,
+        "retry_count": state["retry_count"] + 1
+    }
 
 graph = StateGraph(dict)
 
 graph.add_node("encrypt_narration", encrypt_narration)
 graph.add_node("llm_extract_fields", llm_extract_fields)
+graph.add_node("validate_extraction", validate_extraction)
+graph.add_node("retry_extraction", retry_extraction)
 graph.add_node("mapping_function", mapping_function)
 graph.add_node("build_final_fir", build_final_fir)
 
 graph.add_edge(START, "encrypt_narration")
 graph.add_edge("encrypt_narration", "llm_extract_fields")
-graph.add_edge("llm_extract_fields", "mapping_function")
+
+# NEW FLOW
+graph.add_edge("llm_extract_fields", "validate_extraction")
+
+graph.add_conditional_edges(
+    "validate_extraction",
+    decide_next_step,
+    {
+        "retry_extraction": "retry_extraction",
+        "mapping_function": "mapping_function"
+    }
+)
+
+graph.add_edge("retry_extraction", "validate_extraction")
+
 graph.add_edge("mapping_function", "build_final_fir")
 graph.add_edge("build_final_fir", END)
 
