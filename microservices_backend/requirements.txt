@@ -4,6 +4,7 @@ langchain-groq
 langgraph
 langsmith
 python-dotenv
+langchain-community
 fastapi
 uvicorn
 langchain-huggingface
