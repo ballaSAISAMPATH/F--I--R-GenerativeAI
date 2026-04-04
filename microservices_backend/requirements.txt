@@ -2,8 +2,11 @@ langchain
 langchain-core
 langchain-groq
 langgraph
+langsmith
 python-dotenv
 fastapi
 uvicorn
 langchain-huggingface
 sentence_transformers
+pydantic
+typing

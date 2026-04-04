@@ -1,0 +1,23 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+httpx
+google-generativeai
+sqlalchemy
+aiosqlite
+python-multipart
+python-dotenv
+
+# PDF extraction
+pdfplumber      # digital PDFs (text layer)
+pypdf            # PDF validation fallback
+
+# OCR — only needed for scanned FIR PDFs
+# Install Tesseract binary separately:
+#   Windows → https://github.com/UB-Mannheim/tesseract/wiki
+#   Ubuntu  → sudo apt install tesseract-ocr
+#   macOS   → brew install tesseract
+pytesseract
+pdf2image
+pillow
