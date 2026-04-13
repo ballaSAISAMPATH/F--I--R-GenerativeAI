@@ -5,6 +5,10 @@ FIR_generation_prompt = ChatPromptTemplate.from_messages([
         "system",
         "You are a STRICT legal information extraction assistant for police FIR drafting.\n"
         "Your role is LIMITED and NON-INTERPRETATIVE.\n\n"
+        "IMPORTANT:"
+        "- DO NOT modify placeholders like PERSON_1, LOCATION_1, DATE_1"
+        "- Use them EXACTLY as given"
+        "- Do not change case, spacing, or format"
         "TASKS:\n"
         "- Extract offence-related facts from the narration.\n"
         "- Identify ONLY clearly applicable legal sections under Indian law.\n\n"

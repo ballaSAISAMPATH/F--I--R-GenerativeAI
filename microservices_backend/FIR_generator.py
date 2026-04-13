@@ -134,7 +134,10 @@ def encrypt_narration(state: dict):
 
     # Normalize mapping keys (strip whitespace, uppercase) to ensure consistent matching
     raw_mapping = data.get("mapping", {})
-    normalized_mapping = {k.strip().upper(): v for k, v in raw_mapping.items()}
+    normalized_mapping = {
+    str(v).strip().upper(): k.strip().upper()
+    for k, v in raw_mapping.items()
+    }
 
     # Also normalize placeholders in the encrypted narration to match
     encrypted = data["encrypted_narration"]
@@ -163,7 +166,9 @@ def llm_extract_fields(state: dict):
 def replace_secured_fields(value, mapping: dict):
     if isinstance(value, str):
         for placeholder, original in mapping.items():
-            value = value.replace(placeholder, str(original))
+            pattern_str = placeholder.replace("_", "[_\\s-]?")
+            pattern = re.compile(rf"\b{pattern_str}\b", re.IGNORECASE)
+            value = pattern.sub(str(original), value)
         return value
 
     if isinstance(value, list):
@@ -174,13 +179,12 @@ def replace_secured_fields(value, mapping: dict):
 
     return value
 
-
 def mapping_function(state: dict):
     llm_data = state["llm_data"]
     raw_mapping = state["mapping"]
-
-    # Normalize: strip whitespace from keys so Ollama inconsistencies don't break matching
-    mapping = {k.strip(): v for k, v in raw_mapping.items()}
+    print("\n[DEBUG] LLM OUTPUT:", llm_data.model_dump())
+    # Normalize: strip whitespace and uppercase keys to match encrypt_narration normalization
+    mapping = {k.strip().upper(): v for k, v in raw_mapping.items()}
 
     print("\n[mapping_function] mapping keys:", list(mapping.keys()))
 
