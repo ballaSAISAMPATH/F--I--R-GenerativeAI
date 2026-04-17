@@ -53,6 +53,9 @@ export default function Navbar() {
               {item.label}
             </button>
           ))}
+        <div>
+          <Link to={"firAnalysis"}>FIR Analysis</Link>
+        </div>
         </div>
 
         <button

@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import Step1Page from "./pages/Step1Page";
 import Step2Page from "./pages/Step2Page";
+import FIRAnalysisPage from "./pages/FIRAnalysisPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       {/* FIR filing steps */}
       <Route path="/step-1" element={<Step1Page />} />
       <Route path="/step-2" element={<Step2Page />} />
+      <Route path="/firAnalysis" element={<FIRAnalysisPage />} />
 
       {/* Legacy /auth redirect → /login */}
       <Route path="/auth" element={<Navigate to="/login" replace />} />
