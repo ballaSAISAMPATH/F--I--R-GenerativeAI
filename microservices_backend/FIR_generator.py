@@ -13,12 +13,10 @@ import re
 from encryption_template import encryption_prompt
 from FIR_generation_template import FIR_generation_prompt
 
-load_dotenv()
+load_dotenv(override=True)
 
 model = ChatGroq(
-    model="llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0
+    model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"), temperature=0
 )
 
 
@@ -41,17 +39,21 @@ class Accused(BaseModel):
 
 class PropertyItem(BaseModel):
     description: Optional[str] = None
-    quantity: Optional[Union[str,int]] = None
+    quantity: Optional[Union[str, int]] = None
     value: Optional[str] = None
     identification_marks: Optional[str] = None
 
 
 class LLMFIRExtraction(BaseModel):
-    acts_and_sections: List[LawSection]=Field(description="List of applicable laws and their sections, strictly from the allowed law set")
+    acts_and_sections: List[LawSection] = Field(
+        description="List of applicable laws and their sections, strictly from the allowed law set"
+    )
     accused_list: List[Accused]
     complainant_name: Optional[str]
     complainant_address: Optional[str]
-    fir_contents: str= Field(description="clear and meaningful summary of the story and the fir")
+    fir_contents: str = Field(
+        description="clear and meaningful summary of the story and the fir"
+    )
     property_details: List[PropertyItem]
     total_property_value: Optional[str]
     delay_in_reporting_reason: Optional[str]
@@ -59,6 +61,7 @@ class LLMFIRExtraction(BaseModel):
     date_of_occurrence: Optional[str]
     time_of_occurrence: Optional[str]
     place_of_occurrence: Optional[str]
+
 
 class FIRFormIF1(BaseModel):
     district: Optional[str]
@@ -93,13 +96,12 @@ class FIRFormIF1(BaseModel):
     action_taken_description: Optional[str]
 
 
-
 def get_current_datetime():
     now = datetime.now()
     return {
         "date": now.strftime("%d-%m-%Y"),
         "time": now.strftime("%H:%M:%S"),
-        "year": now.strftime("%Y")
+        "year": now.strftime("%Y"),
     }
 
 
@@ -111,52 +113,39 @@ def get_device_location():
     return {
         "district": "Visakhapatnam",
         "police_station": "Cyber Crime Police Station",
-        "distance_and_direction_from_ps": "2 KM North"
+        "distance_and_direction_from_ps": "2 KM North",
     }
 
 
-model1 = ChatOllama(
-    model="llama3.2:latest",
-    temperature=0,
-    format="json"
-
-)
+model1 = ChatOllama(model="llama3.2:latest", temperature=0, format="json")
 llm_extraction = model.with_structured_output(LLMFIRExtraction)
 
+
 def encrypt_narration(state: dict):
-    msg = encryption_prompt.format_messages(
-        text=state["fir_text"]
-    ) 
+    msg = encryption_prompt.format_messages(text=state["fir_text"])
     response = model1.invoke(msg)
 
     data = json.loads(response.content)
 
     raw_mapping = data.get("mapping", {})
 
-    mapping = {
-        k.strip().upper(): v.strip()
-        for k, v in raw_mapping.items()
-    }
+    mapping = {k.strip().upper(): v.strip() for k, v in raw_mapping.items()}
 
     encrypted = data["encrypted_narration"]
 
     print("\n[encrypt_narration] mapping:", mapping)
     print("[encrypt_narration] encrypted snippet:", encrypted[:])
 
-    return {
-        "encrypted_narration": encrypted,
-        "mapping": mapping
-    }
+    return {"encrypted_narration": encrypted, "mapping": mapping}
+
 
 def llm_extract_fields(state: dict):
     msg = FIR_generation_prompt.format_messages(
         FIR_narration=state["encrypted_narration"]
     )
     extracted = llm_extraction.invoke(msg)
-    return {
-        "llm_data": extracted,
-        "mapping": state["mapping"]
-    }
+    return {"llm_data": extracted, "mapping": state["mapping"]}
+
 
 def replace_secured_fields(value, mapping: dict):
     if isinstance(value, str):
@@ -174,6 +163,7 @@ def replace_secured_fields(value, mapping: dict):
 
     return value
 
+
 def mapping_function(state: dict):
     llm_data = state["llm_data"]
     raw_mapping = state["mapping"]
@@ -187,25 +177,24 @@ def mapping_function(state: dict):
     restored_data = replace_secured_fields(secured_data, mapping)
 
     # Warn about any leftover placeholders (pattern: WORD_NUMBER)
-    placeholder_pattern = re.compile(r'\b[A-Z]+_\d+\b')
+    placeholder_pattern = re.compile(r"\b[A-Z]+_\d+\b")
     for field, val in restored_data.items():
         if isinstance(val, str):
             leftovers = placeholder_pattern.findall(val)
             if leftovers:
-                print(f"[mapping_function] WARNING: unresolved placeholders in '{field}': {leftovers}")
+                print(
+                    f"[mapping_function] WARNING: unresolved placeholders in '{field}': {leftovers}"
+                )
 
     restored_llm_data = LLMFIRExtraction(**restored_data)
 
-    return {
-        "llm_data": restored_llm_data
-    }
+    return {"llm_data": restored_llm_data}
 
 
 def build_final_fir(state: dict):
     dt = get_current_datetime()
     loc = get_device_location()
     llm = state["llm_data"]
-    
 
     fir = FIRFormIF1(
         district=loc["district"],
@@ -229,11 +218,11 @@ def build_final_fir(state: dict):
         property_details=llm.property_details,
         total_property_value=llm.total_property_value,
         delay_in_reporting_reason=llm.delay_in_reporting_reason,
-
-        action_taken_description=llm.action_taken_description
+        action_taken_description=llm.action_taken_description,
     )
 
     return {"fir": fir}
+
 
 def validate_extraction(state: dict):
     llm = state["llm_data"]
@@ -248,16 +237,17 @@ def validate_extraction(state: dict):
         missing_fields.append("date_of_occurrence")
 
     return {
-        **state,   
+        **state,
         "missing_fields": missing_fields,
-        "retry_count": state.get("retry_count", 0)
+        "retry_count": state.get("retry_count", 0),
     }
-   
+
 
 def decide_next_step(state: dict):
     if state["missing_fields"] and state["retry_count"] < 2:
         return "retry_extraction"
     return "mapping_function"
+
 
 def retry_extraction(state: dict):
     msg = FIR_generation_prompt.format_messages(
@@ -266,11 +256,8 @@ def retry_extraction(state: dict):
 
     extracted = llm_extraction.invoke(msg)
 
-    return {
-        **state,   
-        "llm_data": extracted,
-        "retry_count": state["retry_count"] + 1
-    }
+    return {**state, "llm_data": extracted, "retry_count": state["retry_count"] + 1}
+
 
 graph = StateGraph(dict)
 
@@ -290,10 +277,7 @@ graph.add_edge("llm_extract_fields", "validate_extraction")
 graph.add_conditional_edges(
     "validate_extraction",
     decide_next_step,
-    {
-        "retry_extraction": "retry_extraction",
-        "mapping_function": "mapping_function"
-    }
+    {"retry_extraction": "retry_extraction", "mapping_function": "mapping_function"},
 )
 
 graph.add_edge("retry_extraction", "validate_extraction")

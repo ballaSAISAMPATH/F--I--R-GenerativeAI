@@ -10,4 +10,3 @@ uvicorn
 langchain-huggingface
 sentence_transformers
 pydantic
-typing
