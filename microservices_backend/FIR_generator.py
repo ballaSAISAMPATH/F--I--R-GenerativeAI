@@ -120,7 +120,6 @@ model1 = ChatOllama(
     temperature=0,
     format="json"
 
-
 )
 llm_extraction = model.with_structured_output(LLMFIRExtraction)
 
