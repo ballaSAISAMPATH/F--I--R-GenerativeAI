@@ -11,7 +11,11 @@ FIR_generation_prompt = ChatPromptTemplate.from_messages([
         "- Do not change case, spacing, or format"
         "TASKS:\n"
         "- Extract offence-related facts from the narration.\n"
-        "- Identify ONLY clearly applicable legal sections under Indian law.\n\n"
+        "- Identify all the  applicable legal sections under Indian law.\n\n"
+        "- Extract all possible FIR fields from the narration"
+        "- Populate the FIRFormIF1 structure"
+        "- If a field is not present in the narration, set it to null or a default value"
+        "- Do NOT invent FIR numbers, GD entries, officer details, or court dispatch details"
         "ALLOWED LAW SET :\n"
         "- Indian Penal Code\n"
         "- Bharatiya Nyaya Sanhita (BNS), 2023\n"
@@ -39,11 +43,6 @@ FIR_generation_prompt = ChatPromptTemplate.from_messages([
         "- Do NOT invent facts or sections."
 
 
-       " TASKS:"
-"- Extract all possible FIR fields from the narration"
-"- Populate the FIRFormIF1 structure"
-"- If a field is not present in the narration, set it to null or a default value"
-"- Do NOT invent FIR numbers, GD entries, officer details, or court dispatch details"
 
     ),
     (

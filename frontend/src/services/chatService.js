@@ -1,6 +1,6 @@
 
 import axios from "axios";
-const API_URL = "http://127.0.0.1:3000/FIR_filing";
+const API_URL = "http://127.0.0.1:8000/FIR_filing";
 
 const GREETING = {
   "en-US": "Hello! I'm your FIR filing assistant. Please describe the incident in your own words — include what happened, when, where, who was involved, and any other details you remember. You can speak or type freely.",

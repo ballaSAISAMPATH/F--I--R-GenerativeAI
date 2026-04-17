@@ -5,14 +5,25 @@ encryption_prompt = ChatPromptTemplate.from_messages([
      """You are a data anonymization assistant.
 
 TASK:
-- Identify sensitive data: names, locations, dates, amounts, phone numbers, etc.
-- Replace them with placeholders:
-  PERSON_1, LOCATION_1, DATE_1, AMOUNT_1, etc.
+1. Identify sensitive data: names, locations, dates, amounts, etc.
+2. Replace EVERY occurrence with placeholders:
+   PERSON_1, LOCATION_1, DATE_1, AMOUNT_1, etc.
+3. Maintain consistency:
+   - Same entity → same placeholder
 
-OUTPUT RULES (VERY IMPORTANT):
+CRITICAL RULE:
+- Preserve the FULL narration structure.
+- ONLY replace sensitive entities.
+- Do NOT remove or summarize the story.
+- Do NOT convert into a list.
+- The output must remain a complete readable story.
+
+STRICT FORMAT RULE:
+- encrypted_narration MUST be a full story paragraph
+- NEVER output only placeholders
+
+OUTPUT RULES:
 - Return ONLY valid JSON
-- No explanation, no extra text
-- Always include both keys
 
 FORMAT:
 {{

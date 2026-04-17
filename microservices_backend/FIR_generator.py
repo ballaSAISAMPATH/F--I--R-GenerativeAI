@@ -47,7 +47,7 @@ class PropertyItem(BaseModel):
 
 
 class LLMFIRExtraction(BaseModel):
-    acts_and_sections: List[LawSection]
+    acts_and_sections: List[LawSection]=Field(description="List of applicable laws and their sections, strictly from the allowed law set")
     accused_list: List[Accused]
     complainant_name: Optional[str]
     complainant_address: Optional[str]
@@ -131,26 +131,22 @@ def encrypt_narration(state: dict):
 
     data = json.loads(response.content)
 
-    # Normalize mapping keys (strip whitespace, uppercase) to ensure consistent matching
     raw_mapping = data.get("mapping", {})
-    normalized_mapping = {
-    str(v).strip().upper(): k.strip().upper()
-    for k, v in raw_mapping.items()
+
+    mapping = {
+        k.strip().upper(): v.strip()
+        for k, v in raw_mapping.items()
     }
 
-    # Also normalize placeholders in the encrypted narration to match
     encrypted = data["encrypted_narration"]
-    for original_key, normalized_key in zip(raw_mapping.keys(), normalized_mapping.keys()):
-        encrypted = encrypted.replace(original_key, normalized_key)
 
-    print("\n[encrypt_narration] mapping keys:", list(normalized_mapping.keys()))
-    print("[encrypt_narration] encrypted narration snippet:", encrypted[:200])
+    print("\n[encrypt_narration] mapping:", mapping)
+    print("[encrypt_narration] encrypted snippet:", encrypted[:])
 
     return {
         "encrypted_narration": encrypted,
-        "mapping": normalized_mapping
+        "mapping": mapping
     }
-
 
 def llm_extract_fields(state: dict):
     msg = FIR_generation_prompt.format_messages(
@@ -306,16 +302,3 @@ graph.add_edge("mapping_function", "build_final_fir")
 graph.add_edge("build_final_fir", END)
 
 compiled_graph = graph.compile()
-
-
-# FIR_TEXT = """
-# On 15th April 2025, the complainant Rahul Mehta, aged 32 years,
-# resident of Secunderabad, received multiple phone calls and WhatsApp
-# messages from an unknown person claiming to be a bank officer.
-# The accused obtained debit card details and OTP and transferred
-# ₹1,20,000/- online. The accused threatened false cases if reported.
-# """
-
-# output = compiled_graph.invoke({"fir_text": FIR_TEXT})
-
-# print(json.dumps(output["fir"].model_dump(), indent=2))
