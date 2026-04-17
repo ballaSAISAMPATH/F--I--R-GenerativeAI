@@ -2,11 +2,13 @@ from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
+from langchain_community.chat_models import ChatOllama
 from dotenv import load_dotenv
 from datetime import datetime
 import uuid
 import os
 import json
+import re
 
 from encryption_template import encryption_prompt
 from FIR_generation_template import FIR_generation_prompt
@@ -113,20 +115,40 @@ def get_device_location():
     }
 
 
+model1 = ChatOllama(
+    model="llama3.2:latest",
+    temperature=0,
+    format="json"
 
-encrypt_llm = model.with_structured_output(NarrationEncrypted)
+)
 llm_extraction = model.with_structured_output(LLMFIRExtraction)
-
-
 
 def encrypt_narration(state: dict):
     msg = encryption_prompt.format_messages(
         text=state["fir_text"]
-    )
-    result = encrypt_llm.invoke(msg)
+    ) 
+    response = model1.invoke(msg)
+
+    data = json.loads(response.content)
+
+    # Normalize mapping keys (strip whitespace, uppercase) to ensure consistent matching
+    raw_mapping = data.get("mapping", {})
+    normalized_mapping = {
+    str(v).strip().upper(): k.strip().upper()
+    for k, v in raw_mapping.items()
+    }
+
+    # Also normalize placeholders in the encrypted narration to match
+    encrypted = data["encrypted_narration"]
+    for original_key, normalized_key in zip(raw_mapping.keys(), normalized_mapping.keys()):
+        encrypted = encrypted.replace(original_key, normalized_key)
+
+    print("\n[encrypt_narration] mapping keys:", list(normalized_mapping.keys()))
+    print("[encrypt_narration] encrypted narration snippet:", encrypted[:200])
+
     return {
-        "encrypted_narration": result.encrypted_narration,
-        "mapping": result.mapping
+        "encrypted_narration": encrypted,
+        "mapping": normalized_mapping
     }
 
 
@@ -143,7 +165,9 @@ def llm_extract_fields(state: dict):
 def replace_secured_fields(value, mapping: dict):
     if isinstance(value, str):
         for placeholder, original in mapping.items():
-            value = value.replace(placeholder, str(original))
+            pattern_str = placeholder.replace("_", "[_\\s-]?")
+            pattern = re.compile(rf"\b{pattern_str}\b", re.IGNORECASE)
+            value = pattern.sub(str(original), value)
         return value
 
     if isinstance(value, list):
@@ -154,13 +178,26 @@ def replace_secured_fields(value, mapping: dict):
 
     return value
 
-
 def mapping_function(state: dict):
-    llm_data = state["llm_data"]      
-    mapping = state["mapping"]       
+    llm_data = state["llm_data"]
+    raw_mapping = state["mapping"]
+    print("\n[DEBUG] LLM OUTPUT:", llm_data.model_dump())
+    # Normalize: strip whitespace and uppercase keys to match encrypt_narration normalization
+    mapping = {k.strip().upper(): v for k, v in raw_mapping.items()}
+
+    print("\n[mapping_function] mapping keys:", list(mapping.keys()))
 
     secured_data = llm_data.model_dump()
     restored_data = replace_secured_fields(secured_data, mapping)
+
+    # Warn about any leftover placeholders (pattern: WORD_NUMBER)
+    placeholder_pattern = re.compile(r'\b[A-Z]+_\d+\b')
+    for field, val in restored_data.items():
+        if isinstance(val, str):
+            leftovers = placeholder_pattern.findall(val)
+            if leftovers:
+                print(f"[mapping_function] WARNING: unresolved placeholders in '{field}': {leftovers}")
+
     restored_llm_data = LLMFIRExtraction(**restored_data)
 
     return {
